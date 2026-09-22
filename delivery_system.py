@@ -27,6 +27,8 @@ def _point(value: Any, field_name: str) -> Point:
 
 def _records(value: Any, collection_name: str) -> list[tuple[str, Any]]:
     """Normalize either an ID-keyed object or a list of records."""
+    # Dictionary input already carries IDs as keys; list input carries the ID
+    # inside each record. Returning the same pair format keeps later code simple.
     if isinstance(value, dict):
         return list(value.items())
     if isinstance(value, list):
@@ -41,6 +43,7 @@ def _records(value: Any, collection_name: str) -> list[tuple[str, Any]]:
 
 def _location(record: Any, field_name: str) -> Point:
     """Read a location from either a bare coordinate or a record object."""
+    # The test fixtures use both [x, y] values and objects with a location field.
     if isinstance(record, dict):
         value = record.get("location")
     else:
@@ -79,6 +82,8 @@ def load_data(path: Path) -> tuple[dict[str, Point], dict[str, Point], list[dict
     if not isinstance(packages, list):
         raise ValueError("packages must be an array")
     for package in packages:
+        # Validate references while loading so simulation never has to handle a
+        # missing warehouse or malformed destination halfway through a route.
         if not isinstance(package, dict):
             raise ValueError("each package must be an object")
         if not isinstance(package.get("id"), str):
@@ -94,6 +99,7 @@ def load_data(path: Path) -> tuple[dict[str, Point], dict[str, Point], list[dict
 
 def distance(first: Point, second: Point) -> float:
     """Return the straight-line Euclidean distance between two points."""
+    # hypot is equivalent to sqrt(dx**2 + dy**2) and is numerically robust.
     return math.hypot(second[0] - first[0], second[1] - first[1])
 
 
@@ -125,12 +131,15 @@ def simulate(warehouses: dict[str, Point], agents: dict[str, Point], packages: l
             current_location = package["destination"]
 
         package_count = len(assigned_packages)
+        # Keep the report readable while retaining the full precision above for
+        # choosing the most efficient agent.
         report[agent_id] = {
             "packages_delivered": package_count,
             "total_distance": round(total_distance, 2),
             "efficiency": round(total_distance / package_count, 2) if package_count else 0.0,
         }
 
+    # Agents with no deliveries cannot be the best performer for this day.
     delivered_agents = [agent_id for agent_id, details in report.items() if details["packages_delivered"]]
     report["best_agent"] = min(
         delivered_agents,
