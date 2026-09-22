@@ -1,9 +1,10 @@
 import json
+import random
 from pathlib import Path
 
 import pytest
 
-from delivery_system import load_data, simulate
+from delivery_system import ascii_routes, load_data, simulate, write_top_performer_csv
 
 
 ROOT = Path(__file__).parent
@@ -54,3 +55,28 @@ def test_missing_warehouse_is_rejected(tmp_path: Path):
 
     with pytest.raises(ValueError, match="unknown warehouse"):
         load_data(invalid_input)
+
+
+def test_random_delays_are_reproducible_and_do_not_change_distance():
+    warehouses, agents, packages = load_data(ROOT / "base_case.json")
+
+    first_report = simulate(warehouses, agents, packages, delay_rng=random.Random(7), max_delay=3)
+    second_report = simulate(warehouses, agents, packages, delay_rng=random.Random(7), max_delay=3)
+    plain_report = simulate(warehouses, agents, packages)
+
+    assert first_report == second_report
+    assert first_report["A1"]["total_distance"] == plain_report["A1"]["total_distance"]
+    assert "total_delay" in first_report["A1"]
+
+
+def test_bonus_route_and_top_performer_csv(tmp_path: Path):
+    warehouses, agents, packages = load_data(ROOT / "base_case.json")
+    joining_agent = ("A4", (25.0, 25.0))
+    report = simulate(warehouses, agents, packages, join_agent=joining_agent, join_after=2)
+    route_text = ascii_routes(warehouses, agents, packages, joining_agent, 2)
+    csv_path = tmp_path / "top_performer.csv"
+
+    write_top_performer_csv(report, csv_path)
+
+    assert "A4: START (25.0, 25.0)" in route_text
+    assert report["best_agent"] in csv_path.read_text(encoding="utf-8")

@@ -13,6 +13,25 @@ python delivery_system.py "Python Assignment(Delivery System Test Cases)\test_ca
 
 The default input is `base_case.json` and the default output is `report.json`.
 
+## Optional bonus features
+
+The required default run stays deterministic and produces the original report
+shape. The following optional flags enable the bonus features:
+
+```powershell
+python delivery_system.py base_case.json --random-delays --seed 7 --max-delay 3
+python delivery_system.py base_case.json --ascii-routes
+python delivery_system.py base_case.json --join-agent A4 25 25 --join-after 2
+python delivery_system.py base_case.json --top-csv top_performer.csv
+```
+
+Random delays use the supplied seed for reproducible results and are reported
+separately as `total_delay`; they do not change physical distance or efficiency.
+`--join-after N` makes the new agent eligible for packages beginning at package
+index `N`, while earlier packages remain assigned to the original agents.
+The ASCII visualization lists each agent's start, warehouse stops, and package
+destinations. The CSV export contains the best agent's report row.
+
 ## Delivery rules
 
 - Both supplied input shapes are supported: ID-keyed dictionaries and lists of records.
