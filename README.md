@@ -22,6 +22,24 @@ The default input is `base_case.json` and the default output is `report.json`.
 - `efficiency` is total distance divided by packages delivered. Agents with no packages have efficiency `0.0`.
 - The best agent is the delivered agent with the lowest efficiency; it is `null` when there are no packages.
 
+## Assumptions
+
+The assignment leaves a few operational details open, so the simulator uses these
+deterministic rules:
+
+- Assignment uses each agent's starting position for every package. An agent's
+  movement while delivering an earlier package does not change later assignments.
+- Packages assigned to one agent are delivered in the same order as they appear
+  in the input JSON. This is a simple, reproducible daily route.
+- An agent travels from its current position to each package's warehouse, then
+  directly to that package's destination. The agent remains at the destination
+  until the next package; it does not return to a warehouse or depot.
+- Distances use straight-line Euclidean geometry and are rounded to two decimal
+  places in the report. The best agent is selected using the unrounded totals,
+  with agent ID as the deterministic tie-breaker.
+- Delivery delays, traffic, and mid-day agent changes are not part of the core
+  input contract, so they are not invented for the required report.
+
 ## Test
 
 Run all supplied fixtures and validation tests with:

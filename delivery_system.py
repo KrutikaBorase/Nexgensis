@@ -62,6 +62,8 @@ def load_data(path: Path) -> tuple[dict[str, Point], dict[str, Point], list[dict
         if required not in data:
             raise ValueError(f"input is missing required field: {required}")
 
+    # Normalize both fixture schemas into one internal representation so the
+    # assignment and delivery logic does not need format-specific branches.
     warehouses = {
         identifier: _location(record, f"warehouse {identifier} location")
         for identifier, record in _records(data["warehouses"], "warehouse")
@@ -99,7 +101,8 @@ def simulate(warehouses: dict[str, Point], agents: dict[str, Point], packages: l
     """Assign and deliver packages, returning the required report."""
     assignments: dict[str, list[dict[str, Any]]] = {agent_id: [] for agent_id in agents}
 
-    # Assignment is based on the agent's original position, as required by the prompt.
+    # Assignment is based on each agent's original position. Delivery movement
+    # is intentionally excluded so package order cannot change ownership.
     for package in packages:
         warehouse_location = warehouses[package["warehouse"]]
         nearest_agent = min(
@@ -113,7 +116,8 @@ def simulate(warehouses: dict[str, Point], agents: dict[str, Point], packages: l
         current_location = agents[agent_id]
         total_distance = 0.0
 
-        # Packages keep their input order so repeated runs produce the same route.
+        # Keep input order for a deterministic route. Each package contributes
+        # two legs: current position -> warehouse -> destination.
         for package in assigned_packages:
             warehouse_location = warehouses[package["warehouse"]]
             total_distance += distance(current_location, warehouse_location)
